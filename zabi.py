@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import logging
 from pyzabbix import ZabbixAPI
 import datetime
@@ -27,39 +29,43 @@ def validate_input(x):
         logging.error(f"Validation error: {str(e)}")
         return False
 
-# Get user input or calculate default value
-user_input = input("Enter a number: ")
-if user_input.strip() == "":
-    now = datetime.datetime.now()
-    x = now.hour * now.minute
-else:
+def main():
+    # Get user input or calculate default value
+    user_input = input("Enter a number: ")
+    if user_input.strip() == "":
+        now = datetime.datetime.now()
+        x = now.hour * now.minute
+    else:
+        try:
+            x = int(user_input)
+        except ValueError:
+            x = None
+
+    # Check if the input is valid
+    if x is not None and validate_input(x):
+        # Collatz conjecture loop
+        count = 1
+        while x != 1:
+            if x % 2 == 0:
+                x = x // 2
+            else:
+                x = 3 * x + 1
+            count += 1
+        # Print the result
+        print("Count of iterations:", count)
+    else:
+        print("Input is not valid.")
+
+    # Logout from the Zabbix API
     try:
-        x = int(user_input)
-    except ValueError:
-        x = None
+        z = connect_to_zabbix()
+        if z:
+            z.user.logout()
+    except Exception as e:
+        logging.error(f"Failed to log out from Zabbix API: {str(e)}")
 
-# Check if the input is valid
-if x is not None and validate_input(x):
-    # Collatz conjecture loop
-    count = 1
-    while x != 1:
-        if x % 2 == 0:
-            x = x // 2
-        else:
-            x = 3 * x + 1
-        count += 1
-    # Print the result
-    print("Count of iterations:", count)
-else:
-    print("Input is not valid.")
+    # Close the log file when done
+    logging.shutdown()
 
-# Logout from the Zabbix API
-try:
-    z = connect_to_zabbix()
-    if z:
-        z.user.logout()
-except Exception as e:
-    logging.error(f"Failed to log out from Zabbix API: {str(e)}")
-
-# Close the log file when done
-logging.shutdown()
+if __name__ == "__main__":
+    main()
