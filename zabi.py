@@ -1,71 +1,61 @@
 #!/usr/bin/env python3
 
-import logging
 from pyzabbix import ZabbixAPI
 import datetime
 
-# Configure logging to write errors to a log file
-logging.basicConfig(filename='zabbix_validation_errors.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Define a function to connect to the Zabbix API
 def connect_to_zabbix():
     try:
-        z = ZabbixAPI("http://10.75.20.153/zabbix/")  # Replace with your Zabbix server URL
-        z.login(user='Admin', password='zabbix')  # or replace with your API token
-        print("Connected to Zabbix API Version %s" % z.api_version())
+        z = ZabbixAPI("http://10.75.20.153/zabbix/")
+        z.login(user='Admin', password='zabbix')
         return z
     except Exception as e:
-        logging.error(f"Failed to connect to Zabbix API: {str(e)}")
         return None
 
-# Create a function to perform validation
-def validate_input(x):
-    try:
-        # Your validation logic here
-        if x < 0:
-            raise ValueError("Input must be non-negative.")
-        return True
-    except Exception as e:
-        logging.error(f"Validation error: {str(e)}")
-        return False
+def jei_none():
+    now = datetime.datetime.now()
+    nhour = now.hour
+    nminute = now.minute
+    return now.hour * now.minute
 
 def main():
-    # Get user input or calculate default value
-    user_input = input("Enter a number: ")
-    if user_input.strip() == "":
-        now = datetime.datetime.now()
-        x = now.hour * now.minute
-    else:
+    zabbix_api = connect_to_zabbix()
+    if zabbix_api:
         try:
-            x = int(user_input)
-        except ValueError:
-            x = None
-
-    # Check if the input is valid
-    if x is not None and validate_input(x):
-        # Collatz conjecture loop
-        count = 1
-        while x != 1:
-            if x % 2 == 0:
-                x = x // 2
+            x_input = input("Enter a number: ")
+            if not x_input:
+                x = jei_none()
             else:
-                x = 3 * x + 1
-            count += 1
-        # Print the result
-        print("Count of iterations:", count)
-    else:
-        print("Input is not valid.")
+                x = int(x_input)
 
-    # Logout from the Zabbix API
-    try:
-        z = connect_to_zabbix()
-        if z:
-            z.user.logout()
-    except Exception as e:
-        logging.error(f"Failed to log out from Zabbix API: {str(e)}")
+            count = 1
 
-    # Close the log file when done
-    logging.shutdown()
+            while x != 1:
+                if x % 2 == 0:
+                    x = x // 2
+                else:
+                    x = 3 * x + 1
+                count += 1
+
+            print(count)
+
+        except ValueError:
+            print("Invalid input.")
+        except EOFError:
+            x = jei_none()
+            count = 1
+            while x != 1:
+                if x % 2 == 0:
+                    x = x // 2
+                else:
+                    x = 3 * x + 1
+                count += 1
+            print(count)
+
+        # Logout from the Zabbix API
+        try:
+            zabbix_api.user.logout()
+        except Exception:
+            pass  # Ignore logout errors
 
 if __name__ == "__main__":
     main()
