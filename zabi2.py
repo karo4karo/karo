@@ -21,7 +21,7 @@ def main():
     zabbix_api = connect_to_zabbix()
     if zabbix_api:
         try:
-            x_input = input("Enter a number: ")
+            x_input = input()
             if not x_input:
                 x = jei_none()
             else:
